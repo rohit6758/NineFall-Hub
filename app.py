@@ -11,7 +11,7 @@ app.config['SECRET_KEY'] = 'titan-epic-key-2026'
 
 # DATABASE CONFIG
 # Automatically switch to a cloud database if hosted, otherwise use localhost
-db_url = os.environ.get('DATABASE_URL', 'mysql+mysqlconnector://root:rohit1234@localhost/arizen_db')
+db_url = os.environ.get('DATABASE_URL', 'mysql+mysqlconnector://avnadmin:AVNS_8S30UYZzL3bXFZ-359f@mysql-1e76bdcd-rohit2906a-f74f.k.aivencloud.com:22275/defaultdb')
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
@@ -27,8 +27,8 @@ login_manager.login_view = 'login'
 # --- DATABASE MODELS ---
 
 likes = db.Table('likes',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
-    db.Column('post_id', db.Integer, db.ForeignKey('post.id'))
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('post_id', db.Integer, db.ForeignKey('post.id'), primary_key=True)
 )
 
 class Follow(db.Model):

@@ -10,7 +10,7 @@ team_data = [
     {"u": "harsha", "bio": "Weapon Artist.", "lvl": 35},
     {"u": "sumanth", "bio": "Environment Artist.", "lvl": 20},
     {"u": "Vinay", "bio": "Networking Engineer.", "lvl": 15},
-    {"u": "Charan", "bio": "Gameplay Programmer.", "lvl": 10},
+    {"u": "Prudhvi", "bio": "Gameplay Programmer.", "lvl": 10},
 ]
 
 # 2. Define the Missing Assets (ADDED the missing comma)
@@ -22,7 +22,7 @@ assets = [
     {"u": "harsha", "t": "FPS WEAPON PACK", "f": "tuuent.mp4", "p": 3000, "d": "10 High-fidelity weapons."},
     {"u": "sumanth", "t": "OPEN WORLD MAP", "f": "damage taker cube.mp4", "p": 4500, "d": "8x8km Landscape."},
     {"u": "Vinay", "t": "MULTIPLAYER CHAT", "f": "up jumping portal.mp4", "p": 600, "d": "Global voice chat."},
-    {"u": "Charan", "t": "PARKOUR SYSTEM V2", "f": "human.mp4", "p": 1800, "d": "Climbing and vaulting."}
+    {"u": "Prudhvi", "t": "PARKOUR SYSTEM V2", "f": "human.mp4", "p": 1800, "d": "Climbing and vaulting."}
 ]
 
 with app.app_context():
