@@ -215,6 +215,7 @@
     </div>
         </div>
 
+        <div>
         <div onclick="checkLoginAndAction(() => showPage('profile', currentUser))" class="p-6 border-t border-indigo-500/10 cursor-pointer hover:bg-indigo-500/10 transition group">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 relative">
@@ -231,6 +232,15 @@ Logout
 
                 </div>
             </div>
+        </div>
+        
+        <div class="pt-4 border-t border-white/10 hidden md:flex flex-col gap-2 px-6 pb-6">
+    <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">NINEFALL ECOSYSTEM</p>
+    <a href="mailto:ninefallgames@gmail.com" class="text-xs text-gray-400 hover:text-cyan-400 transition"><i class="fa-solid fa-envelope mr-2"></i> Contact Protocol</a>
+    <a href="https://instagram.com/ninefallgames" target="_blank" class="text-xs text-gray-400 hover:text-pink-500 transition"><i class="fa-brands fa-instagram mr-2"></i> Intel Grid</a>
+    <a href="https://youtube.com/@ninefallgames" target="_blank" class="text-xs text-gray-400 hover:text-red-500 transition"><i class="fa-brands fa-youtube mr-2"></i> Transmissions</a>
+    <a href="policy.html" class="text-[10px] text-gray-600 hover:text-white transition mt-2">Privacy Policy</a>
+</div>
         </div>
     </aside>
 
@@ -448,28 +458,39 @@ Logout
     </div>
 
     <div id="authModal" class="modal-overlay">
-        <div class="bg-black border border-white/20 p-10 max-w-sm w-full text-center relative">
-            <button onclick="closeModal('authModal')" class="absolute top-4 right-4 text-gray-500 hover:text-white">✕</button>
-            <h2 class="text-2xl brand-font mb-2">PROFILE</h2>
-            <div id="loginForm">
-                <form action="/login" method="POST" class="space-y-4">
-                    <input type="text" name="email" placeholder="CODENAME" class="w-full bg-[#111] border border-white/10 p-4 text-xs text-white outline-none focus:border-cyan-400">
-                    <input type="password" name="password" placeholder="PASSWORD" class="w-full bg-[#111] border border-white/10 p-4 text-xs text-white outline-none focus:border-cyan-400">
-                    <button type="submit" class="w-full btn-prism bg-cyan-400 hover:bg-cyan-300 mt-4"><span>CONNECT</span></button>
-                </form>
-                <p onclick="toggleAuth()" class="text-[10px] text-gray-500 mt-6 cursor-pointer hover:text-white uppercase">Initialize New User</p>
-            </div>
-            <div id="signupForm" class="hidden">
-                <form action="/signup" method="POST" class="space-y-4">
-                    <input type="text" name="username" placeholder="DISPLAY NAME" class="w-full bg-[#111] border border-white/10 p-4 text-xs text-white outline-none focus:border-pink-500">
-                    <input type="email" name="email" placeholder="EMAIL" class="w-full bg-[#111] border border-white/10 p-4 text-xs text-white outline-none focus:border-pink-500">
-                    <input type="password" name="password" placeholder="PASSWORD" class="w-full bg-[#111] border border-white/10 p-4 text-xs text-white outline-none focus:border-pink-500">
-                    <button type="submit" class="w-full btn-prism bg-pink-500 hover:bg-pink-400 mt-4"><span>FORGE ID</span></button>
-                </form>
-                <p onclick="toggleAuth()" class="text-[10px] text-gray-500 mt-6 cursor-pointer hover:text-white uppercase">Return to Login</p>
-            </div>
+    <div class="bg-black border border-white/20 p-10 max-w-sm w-full text-center relative">
+        <button onclick="closeModal('authModal')" class="absolute top-4 right-4 text-gray-500 hover:text-white">✕</button>
+        <h2 class="text-2xl brand-font mb-2">PROFILE</h2>
+        
+        <div id="loginForm">
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <input type="email" name="email" placeholder="EMAIL" required class="w-full bg-[#111] border border-white/10 p-4 text-xs text-white outline-none focus:border-cyan-400">
+                <input type="password" name="password" placeholder="PASSWORD" required class="w-full bg-[#111] border border-white/10 p-4 text-xs text-white outline-none focus:border-cyan-400">
+                <button type="submit" class="w-full btn-prism bg-cyan-400 hover:bg-cyan-300 mt-4"><span id="loginBtnText">CONNECT</span></button>
+            </form>
+            <p onclick="toggleAuth('signup')" class="text-[10px] text-gray-500 mt-6 cursor-pointer hover:text-white uppercase">Initialize New User</p>
+        </div>
+
+        <div id="signupForm" class="hidden">
+            <form onsubmit="handleSignup(event)" class="space-y-4">
+                <input type="text" name="username" placeholder="DISPLAY NAME (UNIQUE)" required class="w-full bg-[#111] border border-white/10 p-4 text-xs text-white outline-none focus:border-pink-500">
+                <input type="email" name="email" placeholder="EMAIL" required class="w-full bg-[#111] border border-white/10 p-4 text-xs text-white outline-none focus:border-pink-500">
+                <input type="password" name="password" placeholder="NEW PASSWORD" required class="w-full bg-[#111] border border-white/10 p-4 text-xs text-white outline-none focus:border-pink-500">
+                <button type="submit" class="w-full btn-prism bg-pink-500 hover:bg-pink-400 mt-4"><span id="signupBtnText">FORGE ID</span></button>
+            </form>
+            <p onclick="toggleAuth('login')" class="text-[10px] text-gray-500 mt-6 cursor-pointer hover:text-white uppercase">Return to Login</p>
+        </div>
+
+        <div id="otpForm" class="hidden">
+            <h3 class="text-sm font-bold text-pink-500 uppercase tracking-widest mb-4">Signal Sent</h3>
+            <p class="text-[10px] text-gray-400 mb-6 font-mono">Enter the 6-digit clearance code transmitted to your email.</p>
+            <form onsubmit="handleOTP(event)" class="space-y-4">
+                <input type="text" id="otpInput" placeholder="000000" required maxlength="6" class="w-full bg-[#111] border border-white/10 p-4 text-center text-xl tracking-[0.5em] text-white outline-none focus:border-cyan-400 font-mono">
+                <button type="submit" class="w-full btn-prism bg-white text-black mt-4"><span id="otpBtnText">VERIFY SIGNAL</span></button>
+            </form>
         </div>
     </div>
+</div>
 
     <script>
     
@@ -479,12 +500,106 @@ Logout
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 
         // --- CORE ---
-        let currentUser = ""; // Supabase Auth will handle populating this later
-        const isLoggedIn = currentUser !== "";
+       let currentUser = ""; 
+let isLoggedIn = false;
+
+// 1. Ask Supabase if someone is currently logged in
+async function checkActiveSession() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    
+    if (session) {
+        // User is logged in! Grab their name.
+        currentUser = session.user.user_metadata.display_name || session.user.email.split('@')[0];
+        isLoggedIn = true;
+        
+        // Change the GUEST text to their real name
+        document.getElementById('sidebar-username-display').innerText = currentUser.toUpperCase();
+        document.getElementById('sideAvatar').src = `https://api.dicebear.com/7.x/shapes/svg?seed=${currentUser}`;
+        
+        if(document.getElementById('mobileAvatar')){
+            document.getElementById('mobileAvatar').src = `https://api.dicebear.com/7.x/shapes/svg?seed=${currentUser}`;
+        }
+    }
+}
+
+// 2. Run this check the millisecond the website opens
+checkActiveSession();
         let savedItems = [];
         let allPosts = [];
         let currentPage = 'feed';
 
+async function handleSignup(event) {
+    event.preventDefault();
+    const btn = document.getElementById('signupBtnText');
+    btn.innerText = "CHECKING DATABASE...";
+
+    const username = event.target.username.value.trim();
+    const email = event.target.email.value.trim();
+    const password = event.target.password.value;
+
+    // 1. Check for unique username
+    const { data: existingUser } = await supabaseClient
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .single();
+
+    if (existingUser) {
+        alert("ACCESS DENIED: That Codename is already taken.");
+        btn.innerText = "FORGE ID";
+        return; 
+    }
+
+    btn.innerText = "TRANSMITTING OTP...";
+
+    // 2. Create Auth Account (Sends the OTP email)
+    const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+        email: email,
+        password: password,
+        options: { data: { display_name: username } }
+    });
+
+    if (authError) {
+        alert("ERROR: " + authError.message);
+        btn.innerText = "FORGE ID";
+        return;
+    }
+
+    // 3. Save username to profiles table
+    if (authData.user) {
+        await supabaseClient.from('profiles').insert([
+            { id: authData.user.id, username: username, display_name: username }
+        ]);
+    }
+
+    // 4. Remember the email and switch to the OTP screen!
+    pendingSignupEmail = email;
+    toggleAuth('otp');
+    btn.innerText = "FORGE ID";
+}
+
+async function handleOTP(event) {
+    event.preventDefault();
+    const btn = document.getElementById('otpBtnText');
+    btn.innerText = "VERIFYING...";
+
+    const otpCode = document.getElementById('otpInput').value.trim();
+
+    // Tell Supabase to verify the 6-digit code
+    const { data, error } = await supabaseClient.auth.verifyOtp({
+        email: pendingSignupEmail,
+        token: otpCode,
+        type: 'signup'
+    });
+
+    if (error) {
+        alert("INVALID CODE: " + error.message);
+        btn.innerText = "VERIFY SIGNAL";
+    } else {
+        alert("ID FORGED SUCCESSFULLY! Welcome to the Network.");
+        window.location.reload(); 
+    }
+}
 async function openEditProfile() {
     try {
         const res = await fetch(`/api/user/${currentUser}`);
@@ -555,12 +670,23 @@ function closeModal(id){
     document.getElementById(id).classList.remove('active');
 }
 
-function toggleAuth(){
-    document.getElementById('loginForm').classList.toggle('hidden');
-    document.getElementById('signupForm').classList.toggle('hidden');
+let pendingSignupEmail = "";
+
+function toggleAuth(screen) {
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('signupForm').classList.add('hidden');
+    document.getElementById('otpForm').classList.add('hidden');
+    
+    if(screen === 'login') document.getElementById('loginForm').classList.remove('hidden');
+    if(screen === 'signup') document.getElementById('signupForm').classList.remove('hidden');
+    if(screen === 'otp') document.getElementById('otpForm').classList.remove('hidden');
 }
-function logoutUser(){
-    window.location.href = "/logout";
+async function logoutUser() {
+    // 1. Tell Supabase to securely sign out
+    await supabaseClient.auth.signOut();
+    
+    // 2. Refresh the page to clear the UI and return to GUEST
+    window.location.reload(); 
 }
 
 if(isLoggedIn){
@@ -893,57 +1019,17 @@ async function renderProfile(user) {
 
         <div class="max-w-5xl mx-auto mt-8">
             <div class="flex border-b border-white/10 mb-6 relative">
-                <button onclick="switchProfileTab('store')" id="tab-store" class="px-8 py-4 text-xs font-bold uppercase tracking-widest text-cyan-400 border-b-2 border-cyan-400 transition hover:bg-white/5"><i class="fa-solid fa-box mr-2"></i> Storefront</button>
-                <button onclick="switchProfileTab('community')" id="tab-community" class="px-8 py-4 text-xs font-bold uppercase tracking-widest text-gray-500 border-b-2 border-transparent hover:text-white hover:bg-white/5 transition"><i class="fa-solid fa-satellite-dish mr-2"></i> Transmissions</button>
+                <button class="px-8 py-4 text-xs font-bold uppercase tracking-widest text-cyan-400 border-b-2 border-cyan-400"><i class="fa-solid fa-box mr-2"></i> Storefront</button>
             </div>
 
-            <div id="tab-content-store" class="block">
+            <div class="block">
                 ${renderMiniGrid(userPosts)}
-            </div>
-
-            <div id="tab-content-community" class="hidden">
-                <div class="bg-[#050505] border border-white/10 p-6 md:p-10 space-y-8">
-                    <div class="flex items-center justify-between mb-4 border-b border-white/5 pb-4">
-                        <h2 class="text-sm font-bold text-white uppercase tracking-widest"><i class="fa-solid fa-tower-broadcast text-pink-500 mr-2"></i> Creator Feed</h2>
-                        ${isMe ? `<button class="bg-pink-500/10 text-pink-500 border border-pink-500/30 px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-pink-500 hover:text-black transition shadow-[0_0_15px_rgba(255,0,85,0.2)]">Broadcast Update</button>` : ''}
-                    </div>
-                    
-                    ${mockTransmissions.map(post => `
-                    <div class="border-l-2 border-cyan-500 pl-6 py-2 relative group hover:bg-white/5 transition p-4 rounded-r-lg">
-                        <div class="absolute w-3 h-3 bg-cyan-500 rounded-full -left-[7px] top-6 shadow-[0_0_10px_#00f0ff]"></div>
-                        <p class="text-[10px] text-cyan-500 font-mono mb-3 tracking-widest uppercase">${post.date}</p>
-                        <p class="text-sm text-gray-200 leading-relaxed">${post.text}</p>
-                        <div class="mt-5 flex gap-6 text-[10px] text-gray-500 uppercase tracking-widest font-bold">
-                            <span class="hover:text-pink-500 cursor-pointer transition"><i class="fa-solid fa-fire mr-1"></i> Boost</span>
-                            <span class="hover:text-cyan-400 cursor-pointer transition"><i class="fa-solid fa-comment-dots mr-1"></i> Discuss</span>
-                        </div>
-                    </div>
-                    `).join('')}
-                </div>
             </div>
         </div>
     `;
 }
 
-function switchProfileTab(tab) {
-    document.getElementById('tab-content-store').style.display = tab === 'store' ? 'block' : 'none';
-    document.getElementById('tab-content-community').style.display = tab === 'community' ? 'block' : 'none';
-    
-    const storeBtn = document.getElementById('tab-store');
-    const commBtn = document.getElementById('tab-community');
-    
-    if (tab === 'store') {
-        storeBtn.classList.replace('text-gray-500', 'text-cyan-400');
-        storeBtn.classList.replace('border-transparent', 'border-cyan-400');
-        commBtn.classList.replace('text-cyan-400', 'text-gray-500');
-        commBtn.classList.replace('border-cyan-400', 'border-transparent');
-    } else {
-        commBtn.classList.replace('text-gray-500', 'text-cyan-400');
-        commBtn.classList.replace('border-transparent', 'border-cyan-400');
-        storeBtn.classList.replace('text-cyan-400', 'text-gray-500');
-        storeBtn.classList.replace('border-cyan-400', 'border-transparent');
-    }
-}
+
 
 function startChatFromProfile(username, avatarUrl) {
     showPage('chat_hub');
