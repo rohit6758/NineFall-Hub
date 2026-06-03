@@ -482,13 +482,12 @@ Logout
         </div>
 
         <div id="otpForm" class="hidden">
-            <h3 class="text-sm font-bold text-pink-500 uppercase tracking-widest mb-4">Signal Sent</h3>
-            <p class="text-[10px] text-gray-400 mb-6 font-mono">Enter the 6-digit clearance code transmitted to your email.</p>
-            <form onsubmit="handleOTP(event)" class="space-y-4">
-                <input type="text" id="otpInput" placeholder="000000" required maxlength="6" class="w-full bg-[#111] border border-white/10 p-4 text-center text-xl tracking-[0.5em] text-white outline-none focus:border-cyan-400 font-mono">
-                <button type="submit" class="w-full btn-prism bg-white text-black mt-4"><span id="otpBtnText">VERIFY SIGNAL</span></button>
-            </form>
-        </div>
+    <h3 class="text-sm font-bold text-pink-500 uppercase tracking-widest mb-4">OTP SENT</h3>
+    <p class="text-[10px] text-gray-400 mb-6 font-mono">Enter the 8-digit clearance code transmitted to your email.</p>
+    <form onsubmit="handleOTP(event)" class="space-y-4">
+        <input type="text" id="otpInput" oninput="checkOTPAutoSubmit(this)" placeholder="00000000" required maxlength="8" class="w-full bg-[#111] border border-white/10 p-4 text-center text-xl tracking-[0.5em] text-white outline-none focus:border-cyan-400 font-mono">
+        <button type="submit" id="actualOtpBtn" class="w-full btn-prism bg-white text-black mt-4"><span id="otpBtnText">VERIFY OTP</span></button>
+        </form>
     </div>
 </div>
 
@@ -577,7 +576,43 @@ async function handleSignup(event) {
     toggleAuth('otp');
     btn.innerText = "FORGE ID";
 }
+async function handleLogin(event) {
+    event.preventDefault();
+    const btn = document.getElementById('loginBtnText');
+    btn.innerText = "CONNECTING...";
 
+    // Grab the values from the boxes
+    const emailInput = event.target.email.value.trim();
+    const password = event.target.password.value;
+
+    // Reject it immediately if they didn't type an email address
+    if (!emailInput.includes('@')) {
+        alert("ACCESS DENIED: You must use your Email Address to connect, not your Username.");
+        btn.innerText = "CONNECT";
+        return;
+    }
+
+    // Attempt the secure login
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: emailInput,
+        password: password,
+    });
+
+    if (error) {
+        alert("CONNECTION FAILED: " + error.message); // This will tell us if the password is wrong!
+        btn.innerText = "CONNECT";
+    } else {
+        alert("CONNECTION ESTABLISHED.");
+        window.location.reload();
+    }
+}
+// Automatically submits the form the exact second 8 digits are typed
+function checkOTPAutoSubmit(inputElement) {
+    if (inputElement.value.trim().length === 8) {
+        document.getElementById('otpBtnText').innerText = "VERIFYING...";
+        document.getElementById('actualOtpBtn').click(); 
+    }
+}
 async function handleOTP(event) {
     event.preventDefault();
     const btn = document.getElementById('otpBtnText');
@@ -602,63 +637,104 @@ async function handleOTP(event) {
 }
 async function openEditProfile() {
     try {
-        const res = await fetch(`/api/user/${currentUser}`);
-        const profileData = await res.json();
-        
-        document.getElementById('editDisplayName').value = profileData.display_name || currentUser;
-        document.getElementById('editUsername').value = currentUser;
-        document.getElementById('editVoidId').value = profileData.void_id || '';
-        document.getElementById('editBio').value = profileData.bio || '';
+        // Ask Supabase who is logged in
+        const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                alert("Security Error: No active session found. Please log in.");
+                return;
+            }
+
+        // Fetch their exact row from the profiles table
+        const { data: profileData, error } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+                .maybeSingle();
+
+        if (error) throw error;
+
+            // Populate the modal with their real data or fallback to session defaults
+            document.getElementById('editDisplayName').value = profileData?.display_name || session.user.user_metadata?.display_name || '';
+            document.getElementById('editUsername').value = profileData?.username || session.user.user_metadata?.display_name || '';
+            document.getElementById('editVoidId').value = (profileData?.id || session.user.id).substring(0,8).toUpperCase();
+            document.getElementById('editBio').value = profileData?.bio || '';
         document.getElementById('editProfileModal').classList.add('active');
     } catch(e) {
-        console.error("Failed to fetch profile for editing:", e);
+        console.error("Failed to fetch profile:", e);
         alert("Could not load profile data.");
     }
 }
 async function saveProfileChanges() {
-    const display_name = document.getElementById('editDisplayName').value;
-    const username = document.getElementById('editUsername').value;
-    const bio = document.getElementById('editBio').value;
-        const avatarFile = document.getElementById('editAvatar').files[0];
-        const bannerFile = document.getElementById('editBanner').files[0];
-
-    const btn = document.getElementById('updateMatrixBtn');
-    const originalText = btn.innerText;
-    btn.innerText = "UPLOADING...";
-
-        const formData = new FormData();
-        formData.append('display_name', display_name);
-        formData.append('username', username);
-        formData.append('bio', bio);
-        if(avatarFile) formData.append('avatar', avatarFile);
-        if(bannerFile) formData.append('banner', bannerFile);
+    const display_name = document.getElementById('editDisplayName').value.trim();
+    const username = document.getElementById('editUsername').value.trim();
+    const bio = document.getElementById('editBio').value.trim();
+    const avatarFile = document.getElementById('editAvatar').files[0];
+    const bannerFile = document.getElementById('editBanner').files[0];
+    
+    // THE FIX: Safely target the button and the span inside it so it doesn't crash
+    const btnSpan = document.querySelector('#updateMatrixBtn span');
+    const originalText = btnSpan.innerText;
+    btnSpan.innerText = "UPLOADING TO CLOUD...";
 
     try {
-        const res = await fetch('/api/profile/update', {
-            method: 'POST',
-                body: formData
-        });
-        
-        const data = await res.json();
-        
-        if(data.status === 'success') {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { alert("Security Error: No active session found."); return; }
+
+        // 1. If username changed, check if the new one is already taken
+        const { data: currentProfile } = await supabaseClient
+            .from('profiles')
+            .select('username')
+            .eq('id', session.user.id)
+            .single();
+
+        if (currentProfile && currentProfile.username !== username) {
+            const { data: usernameCheck } = await supabaseClient
+                .from('profiles')
+                .select('username')
+                .eq('username', username)
+                .single();
+
+            if (usernameCheck) {
+                alert("ACCESS DENIED: That Codename is already taken by another user.");
+                btnSpan.innerText = originalText;
+                return;
+            }
+        }
+
+        let updates = { id: session.user.id, display_name: display_name, username: username, bio: bio };
+
+        // 2. Upload Custom Avatar picture to Storage Vault
+        if (avatarFile) {
+            const avatarPath = `${session.user.id}/${Date.now()}_avatar`;
+            const { error: uploadErr } = await supabaseClient.storage.from('avatars').upload(avatarPath, avatarFile);
+            if (uploadErr) throw uploadErr;
+            updates.avatar_url = supabaseClient.storage.from('avatars').getPublicUrl(avatarPath).data.publicUrl;
+        }
+
+        // 3. Upload Custom Banner picture to Storage Vault
+        if (bannerFile) {
+            const bannerPath = `${session.user.id}/${Date.now()}_banner`;
+            const { error: uploadErr } = await supabaseClient.storage.from('banners').upload(bannerPath, bannerFile);
+            if (uploadErr) throw uploadErr;
+            updates.banner_url = supabaseClient.storage.from('banners').getPublicUrl(bannerPath).data.publicUrl;
+        }
+
+        // 4. Save all metadata updates into our profiles table (using upsert)
+        const { error } = await supabaseClient.from('profiles').upsert(updates);
+
+        if (error) {
+            throw error; // Send to catch block
+        } else {
             alert("IDENTITY UPDATED SUCCESSFULLY");
             closeModal('editProfileModal');
-            if (data.new_username !== currentUser) {
-                window.location.reload(); 
-            } else {
-                renderProfile(currentUser); 
-            }
-        } else {
-            alert("ERROR: " + data.message);
+            window.location.reload(); 
         }
     } catch(e) {
-        console.error(e);
-        alert("CONNECTION FAILED");
+        console.error("Cloud Storage Error Details:", e);
+        alert("CONNECTION FAILED: Check the console log.");
+        btnSpan.innerText = originalText; // Safely resets the button on failure
     }
-    btn.innerText = originalText;
 }
-
 function checkLoginAndAction(action){
     if(!isLoggedIn){
         document.getElementById('authModal').classList.add('active');
@@ -682,11 +758,15 @@ function toggleAuth(screen) {
     if(screen === 'otp') document.getElementById('otpForm').classList.remove('hidden');
 }
 async function logoutUser() {
-    // 1. Tell Supabase to securely sign out
-    await supabaseClient.auth.signOut();
-    
-    // 2. Refresh the page to clear the UI and return to GUEST
-    window.location.reload(); 
+    try {
+        await supabaseClient.auth.signOut();
+        // Clear the memory and refresh the screen
+        currentUser = "";
+        isLoggedIn = false;
+        window.location.reload(); 
+    } catch (error) {
+        console.error("Logout Error:", error);
+    }
 }
 
 if(isLoggedIn){
@@ -926,13 +1006,25 @@ function getColorFromName(name) {
 }
 
 async function renderProfile(user) {
-    let profileData = {};
+    let profileData = { display_name: user, bio: "System directive not initialized.", level: 1, sales: 0, followers: [], following: [] };
+    
     try {
-        const res = await fetch(`/api/user/${user}?t=${Date.now()}`);
-        profileData = await res.json();
+        // Fetch the target user's profile from Supabase directly
+        const { data: supabaseProfile, error } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('username', user)
+            .single();
+            
+        if (supabaseProfile) {
+            profileData.display_name = supabaseProfile.display_name;
+            profileData.bio = supabaseProfile.bio;
+            profileData.avatar = supabaseProfile.avatar_url;
+            profileData.banner = supabaseProfile.banner_url;
+            profileData.void_id = supabaseProfile.id.substring(0,8).toUpperCase();
+        }
     } catch(e) {
         console.error("Profile Load Error", e);
-        profileData = { display_name: user, bio: "No directive provided.", level: 1, sales: 0, followers: [], following: [] };
     }
 
     const userPosts = allPosts.filter(p => p.user === user);
@@ -1178,7 +1270,7 @@ async function handleUpload(event) {
             description: desc, 
             video_url: videoUrl, 
             blueprint_url: blueprintUrl,
-            seller_id: null 
+            seller_id: currentUser // <--- Changed from null to link with your authenticated username!
         }
     ]);
 
@@ -1660,8 +1752,7 @@ document.querySelector('.fa-bell').onclick = toggleNotifs;
                 </div>
             <div class="flex-1">
                 <label class="text-[10px] text-gray-400 uppercase tracking-widest mb-1.5 block font-bold flex items-center gap-2"><i class="fa-solid fa-image text-pink-500"></i> Banner</label>
-                <input type="file" id="editBanner" accept="image/*" class="w-full bg-[#111] border border-white/10 rounded-lg p-2 text-gray-400 text-xs outline-none cursor-pointer file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-pink-500/20 file:text-pink-400 hover:file:bg-pink-500/30">
-            </div>
+               <input type="file" id="editBanner" accept="image/*" class="w-full bg-[#111] border border-white/10 rounded-lg p-2 text-gray-400 text-xs outline-none cursor-pointer file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-pink-500/20 file:text-pink-400 hover:file:bg-pink-500/30">
             </div>
 
             <div>
